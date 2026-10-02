@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f8fafc">
+<title>Quant Budget – eelarve ja investeerimise arhitekt</title>
+<script>
+/* Teema määratakse enne esimest joonistust, et vältida vale värviteema välkumist */
+(function(){
+  try{
+    var raw = localStorage.getItem('qba-state-v1');
+    var s = raw ? JSON.parse(raw) : null;
+    var t = s && s.ui && s.ui.theme;
+    if (t !== 'light' && t !== 'dark') t = (matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t;
+  }catch(e){ document.documentElement.dataset.theme = 'light'; }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+<style>
+/* ===== Disainisüsteem: "Läänemere pearaamat" v2.0 — hele/tume teema ===== */
+:root{
+  /* HELE REŽIIM (vaikimisi) */
+  --paper:#f8fafc; --card:#ffffff; --line:#e2e8f0; --line-soft:#f1f5f9; --chip:#f1f5f9;
+  --ink:#0f172a; --muted:#475569;
+  --accent:#059669; --accent-ink:#ffffff;
+  --save:#059669; --save-bg:#ecfdf5;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --bad:#dc2626; --bad-bg:#fef2f2;
+  --btn-bg:#0f172a; --btn-fg:#ffffff;
+  --hero-bg:#0f172a; --hero-fg:#ffffff; --hero-muted:#94a3b8;
+  --panel-shadow:0 1px 2px rgba(15,23,42,.05); --panel-blur:none;
+  --row-green:#ecfdf5; --row-yellow:#fffbeb; --row-blue:#eff6ff;
+  --cta-bg:#eff6ff; --cta-done-bg:#ecfdf5;
+  --key-active:#e2e8f0;
+  --fixed-bar:#7c3aed;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#09090b; --card:rgba(24,24,27,.7); --line:rgba(168,85,247,.22); --line-soft:rgba(255,255,255,.08); --chip:rgba(255,255,255,.06);
+    --ink:#f4f4f5; --muted:#a1a1aa;
+    --accent:#c084fc; --accent-ink:#1e1033;
+    --save:#34d399; --save-bg:rgba(52,211,153,.12);
+    --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12);
+    --bad:#f87171; --bad-bg:rgba(248,113,113,.14);
+    --btn-bg:#7c3aed; --btn-fg:#ffffff;
+    --hero-bg:rgba(24,24,27,.85); --hero-fg:#f4f4f5; --hero-muted:#a1a1aa;
+    --panel-shadow:0 0 20px rgba(168,85,247,.15); --panel-blur:blur(14px);
+    --row-green:rgba(52,211,153,.1); --row-yellow:rgba(251,191,36,.1); --row-blue:rgba(96,165,250,.1);
+    --cta-bg:rgba(192,132,252,.08); --cta-done-bg:rgba(52,211,153,.08);
+    --key-active:rgba(192,132,252,.15);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#09090b; --card:rgba(24,24,27,.7); --line:rgba(168,85,247,.22); --line-soft:rgba(255,255,255,.08); --chip:rgba(255,255,255,.06);
+  --ink:#f4f4f5; --muted:#a1a1aa;
+  --accent:#c084fc; --accent-ink:#1e1033;
+  --save:#34d399; --save-bg:rgba(52,211,153,.12);
+  --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12);
+  --bad:#f87171; --bad-bg:rgba(248,113,113,.14);
+  --btn-bg:#7c3aed; --btn-fg:#ffffff;
+  --hero-bg:rgba(24,24,27,.85); --hero-fg:#f4f4f5; --hero-muted:#a1a1aa;
+  --panel-shadow:0 0 20px rgba(168,85,247,.15); --panel-blur:blur(14px);
+  --row-green:rgba(52,211,153,.1); --row-yellow:rgba(251,191,36,.1); --row-blue:rgba(96,165,250,.1);
+  --cta-bg:rgba(192,132,252,.08); --cta-done-bg:rgba(52,211,153,.08);
+  --key-active:rgba(192,132,252,.15);
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5;transition:background .2s,color .2s}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.025em;font-weight:600}
+button,select,input{font:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Päis — sulandub lehe taustaga, minimalistlik */
+.topbar{background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:1.25rem;letter-spacing:-.03em}
+.brand span{color:var(--accent);font-weight:500}
+.navbtn{display:flex;align-items:center;gap:.4rem;padding:.45rem .8rem;border-radius:999px;color:var(--muted);font-size:.88rem;white-space:nowrap}
+.navbtn:hover{color:var(--ink);background:var(--chip)}
+.navbtn.on{background:var(--btn-bg);color:var(--btn-fg);font-weight:600}
+.theme-toggle{position:relative;width:2.75rem;height:1.5rem;border-radius:999px;background:var(--chip);border:1px solid var(--line);flex-shrink:0;cursor:pointer}
+.theme-toggle .thumb{position:absolute;top:1px;left:1px;width:1.15rem;height:1.15rem;border-radius:999px;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .18s ease,background .18s ease}
+.theme-toggle[aria-checked="true"]{background:rgba(168,85,247,.22)}
+.theme-toggle[aria-checked="true"] .thumb{transform:translateX(1.2rem);background:#c084fc}
+
+/* Kaardid — pehme vari, õrn äär, vertikaalne voog */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1.25rem;box-shadow:var(--panel-shadow);backdrop-filter:var(--panel-blur);-webkit-backdrop-filter:var(--panel-blur)}
+.card-title{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;font-weight:650;font-size:1rem;margin-bottom:.9rem}
+.hero{background:var(--hero-bg);color:var(--hero-fg);border:1px solid var(--line);border-radius:24px;box-shadow:var(--panel-shadow);backdrop-filter:var(--panel-blur);-webkit-backdrop-filter:var(--panel-blur)}
+.hero .muted{color:var(--hero-muted)}
+.bigno{font-size:clamp(2.8rem,9vw,4.2rem);font-weight:800;line-height:1;letter-spacing:-.045em}
+.pos{color:#9ae6b4}.neg{color:#fc8181!important}
+.card .neg{color:var(--bad)!important}
+.hero .neg{color:#fc8181!important}
+.muted{color:var(--muted)}
+.track{background:var(--chip)}
+
+/* Päevariba — igal tulbal all päevanumber */
+.daystrip{display:flex;gap:3px;align-items:flex-end;height:58px}
+.daycol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.daycol i{display:block;width:100%;border-radius:3px 3px 0 0;background:rgba(255,255,255,.15);min-height:4px}
+.daycol i.ok{background:#68d391}.daycol i.over{background:#fc8181}
+.daycol i.today{outline:2px solid #fff;outline-offset:1px}
+.day-num{font-size:8px;line-height:1;margin-top:3px;color:var(--hero-muted);height:8px}
+
+/* Vormid ja nupud */
+.lbl{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.25rem}
+.input{width:100%;border:1px solid var(--line);border-radius:8px;padding:.5rem .65rem;background:var(--card);color:var(--ink)}
+.input-sm{padding:.3rem .45rem;font-size:.85rem}
+.input-ghost{border-color:transparent;padding-left:0;font-weight:600}
+.input-ghost:hover,.input-ghost:focus{border-color:var(--line);padding-left:.5rem}
+.input-warn{border-color:var(--warn);background:var(--warn-bg)}
+.swatch{width:2.2rem;height:2rem;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--card)}
+input[type=range]{accent-color:var(--accent);height:1.6rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem 1rem;border-radius:10px;font-weight:600;transition:transform .08s,filter .15s}
+.btn:active{transform:scale(.97)}
+.btn-dark{background:var(--btn-bg);color:var(--btn-fg)}.btn-dark:hover{filter:brightness(1.12)}
+.btn-sea{background:var(--accent);color:var(--accent-ink)}.btn-sea:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}.btn-ghost:hover{background:var(--chip)}
+.btn-sm{padding:.3rem .6rem;font-size:.8rem}
+.armed{background:var(--bad)!important;color:#fff!important;border-color:var(--bad)!important}
+.icon-btn{width:1.8rem;height:1.8rem;border-radius:999px;color:var(--muted)}
+.icon-btn:hover{background:var(--bad-bg);color:var(--bad)}
+.link{color:var(--accent);font-size:.85rem;font-weight:600}
+.link-danger{color:var(--muted)}.link-danger:hover{color:var(--bad)}
+.dot{display:inline-block;width:.55rem;height:.55rem;border-radius:999px;vertical-align:middle}
+
+/* Monogramm — kategooria "ikoon" ilma emotikonita */
+.mono-badge{display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:8px;font-weight:700;flex-shrink:0;font-size:.85rem}
+.mono-badge.lg{width:3rem;height:3rem;font-size:1.2rem;border-radius:12px}
+
+/* Maksa esmalt endale */
+.cta{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;justify-content:space-between;border-radius:12px;padding:1rem;background:var(--cta-bg);border-left:5px solid var(--accent)}
+.cta-done{background:var(--cta-done-bg);border-left-color:var(--save)}
+.cta strong{font-size:1.1rem}
+
+/* Kiirlisaja */
+.kp-display{font-size:2.6rem;font-weight:800;letter-spacing:-.03em;background:rgba(255,255,255,.07);border-radius:14px;padding:.4rem .8rem}
+.key{height:4rem;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--ink);font-size:1.6rem;font-weight:600;touch-action:manipulation;transition:background .12s,border-color .12s}
+.key:hover{background:var(--chip);border-color:var(--accent)}
+.key:active{background:var(--key-active);transform:scale(.96)}
+.catbtn{display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.8rem .4rem;border-radius:14px;background:var(--card);border:1px solid var(--line);border-bottom:4px solid var(--c);touch-action:manipulation;transition:opacity .15s}
+.catbtn:active{transform:scale(.97)}
+.catbtn.dim{opacity:.4}
+
+/* Import ja tabel */
+.dropzone{border:2px dashed var(--line);border-radius:14px;padding:1.6rem;text-align:center;cursor:pointer;transition:background .15s,border-color .15s}
+.dropzone:hover{background:var(--chip)}
+.drop-active{border-color:var(--accent);background:var(--chip)}
+.chip{padding:.3rem .75rem;border-radius:999px;border:1px solid var(--line);font-size:.82rem;background:var(--card);color:var(--ink)}
+.chip.on{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.tbl{width:100%;font-size:.88rem;border-collapse:collapse}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.78rem;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+.tbl td{padding:.5rem;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.row-green td{background:var(--row-green)}
+.row-yellow td{background:var(--row-yellow)}
+.row-blue td{background:var(--row-blue)}
+.rule{font-family:inherit;font-weight:700;font-size:.8rem;background:var(--chip);color:var(--ink);border-radius:6px;padding:.15rem .45rem}
+.formula{font-size:1.15rem;font-weight:600;background:var(--chip);color:var(--ink);border-radius:8px;padding:.6rem .8rem;display:inline-block}
+.axis{font-size:10px;fill:var(--muted)}
+.bar-fill{transition:width .25s ease}
+.tx-divide>*+*{border-top:1px solid var(--line-soft)}
+
+/* Teade */
+.toast{position:fixed;left:50%;bottom:1.5rem;z-index:50;max-width:min(92vw,560px);display:flex;gap:.8rem;align-items:center;background:#0f172a;color:#fff;padding:.7rem 1rem;border-radius:12px;font-size:.9rem;box-shadow:0 10px 30px rgba(20,33,61,.3);opacity:0;pointer-events:none;transform:translate(-50%,12px);transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.toast-error{background:#dc2626}
+.toast button{color:#a78bfa;font-weight:700;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><p style="padding:2rem;text-align:center">Laadin andmeid…</p></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* =====================================================================
+   THE QUANT BUDGET & INVESTMENT ARCHITECT — v2.1 (Local-First)
+   1) Konstandid ja abifunktsioonid
+   2) Andmekiht (Store): ainult brauseri localStorage (Local-First)
+      Supabase lisamiseks tuleb vahetada ainult Store.load / Store.write.
+   3) Skeem ja migratsioon (andmete ohutu uuendamine) + kuude ajaloo arhiveerimine
+   4) Arvutusmootor calc(kuuvõti) – ainus tõe allikas kõigile numbritele.
+      Toetab jooksvat KUI ka ajaloolisi kuid (ajalooline kuu loeb state.history snapshotti).
+   5) Pangatoru: CSV → normalizeBankRows → ingestBankRows
+      Open Banking / webhook kutsub tulevikus sama ingestBankRows().
+   6) Reeglite mootor   7) Vaated (sh kuude ajalugu ja säästueesmärkide portfell)   8) Tegevused ja sündmused
+   ===================================================================== */
+
+/* ---------- 1. KONSTANDID JA ABIFUNKTSIOONID ---------- */
+const APP_KEY = 'qba-state-v1';
+const SCHEMA_VERSION = 1;
+const FALLBACK_CAT = 'fun';
+const INFLATION_RATE = 2.5;
+const MONTHS_ET = ['jaanuar', 'veebruar', 'märts', 'aprill', 'mai', 'juuni', 'juuli', 'august', 'september', 'oktoober', 'november', 'detsember'];
+const PALETTE = ['#1f6f8b', '#2f855a', '#b7791f', '#6b46c1', '#c05621', '#2b6cb0', '#b83280', '#4a5568'];
+const UNCAT = { id: null, name: 'Kategoriseerimata', color: '#e9b949' };
+
+const DEFAULT_CATEGORIES = [
+  { id: 'food', name: 'Toit', color: '#2f855a', daily: true },
+  { id: 'transport', name: 'Transport', color: '#2b6cb0', daily: true },
+  { id: 'fun', name: 'Meelelahutus/Muu', color: '#b7791f', daily: true },
+  { id: 'fixed', name: 'Püsikulud', color: '#6b46c1', daily: false }
+];
+const DEFAULT_ALLOCATIONS = [
+  { id: 'invest', name: 'Investeeringud', pct: 15, invest: true },
+  { id: 'travel', name: 'Reisimine', pct: 5, invest: false },
+  { id: 'purchase', name: 'Suurem ost', pct: 5, invest: false },
+  { id: 'buffer', name: 'Meelerahufond', pct: 5, invest: false }
+];
+const DEFAULT_RULES = [['RIMI', 'food'], ['SELVER', 'food'], ['PRISMA', 'food'], ['MAXIMA', 'food'], ['LIDL', 'food'],
+  ['BOLT', 'transport'], ['ELRON', 'transport'], ['TELIA', 'fixed'], ['ELEKTRILEVI', 'fixed']]
+  .map(([pattern, cat]) => ({ id: 'r-' + pattern.toLowerCase(), pattern, cat }));
+
+const VIEWS = [
+  { id: 'dashboard', label: 'Ülevaade' },
+  { id: 'quick', label: 'Kiirlisaja' },
+  { id: 'strategy', label: 'Strateegiatuba' },
+  { id: 'settings', label: 'Seaded' }
+];
+const FILTERS = {
+  all: ['Kõik', () => true],
+  ok: ['Kinnitatud', t => t.reconciled],
+  unknown: ['Tundmatud', t => t.cat === null],
+  pending: ['Ootavad panka', t => t.source === 'manual' && !t.reconciled],
+  bank: ['Ainult pangast', t => t.source === 'bank' && t.cat !== null]
+};
+
+const CHECK_SVG = '<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline-block;vertical-align:-2px"><path d="M4 10.5l4 4 8-9"/></svg>';
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const num = (v, d = 0) => {
+  let s = String(v ?? '').replace(/\s/g, '');
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '');
+  const n = parseFloat(s.replace(',', '.'));
+  return Number.isFinite(n) ? n : d;
+};
+const round2 = n => Math.round(n * 100) / 100;
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const EUR = new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR' });
+const eur = n => EUR.format(round2(n || 0));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayISO = () => isoDate(new Date());
+const monthKey = (iso = todayISO()) => iso.slice(0, 7);
+const daysInMonth = key => { const [y, m] = key.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+const dayDiff = (a, b) => Math.round((Date.parse(a) - Date.parse(b)) / 864e5);
+const pctOf = (a, b) => (b > 0 ? clamp(a / b * 100, 0, 100) : (a > 0 ? 100 : 0));
+const fmtDay = iso => `${+iso.slice(8, 10)}.${+iso.slice(5, 7)}`;
+const monthLabel = key => { const [y, m] = key.split('-').map(Number); const s = `${MONTHS_ET[m - 1]} ${y}`; return s[0].toUpperCase() + s.slice(1); };
+const nTx = n => `${n} ${n === 1 ? 'tehing' : 'tehingut'}`;
+const byDateDesc = (a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id));
+// Hex värv + läbipaistvus -> rgba() string (kategooria monogrammi taustaks; ei sõltu CSS var() toest atribuutides)
+const hexA = (hex, a) => {
+  const h = String(hex || '#94a3b8').replace('#', '');
+  const n = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const r = parseInt(n.slice(0, 2), 16) || 148, g = parseInt(n.slice(2, 4), 16) || 163, b = parseInt(n.slice(4, 6), 16) || 184;
+  return `rgba(${r},${g},${b},${a})`;
+};
+
+/* ---------- 2. ANDMEKIHT (ainult lokaalne) ---------- */
+// Andmed salvestatakse AINULT selle brauseri localStorage'isse. Midagi ei saadeta välja.
+let saveOk = null;
+const TEMP_LABEL = 'ajutine mälu (andmed kaovad lehe sulgemisel)';
+const Store = {
+  backend: TEMP_LABEL, timer: null, pending: null,
+  load() {
+    let raw = null;
+    try { raw = localStorage.getItem(APP_KEY); this.backend = 'brauseri localStorage'; } catch (e) { return null; }
+    try { return raw ? JSON.parse(raw) : null; }
+    catch (e) { // rikutud andmed: jäta koopia alles, et midagi kaotsi ei läheks
+      try { localStorage.setItem(APP_KEY + '-rikutud', raw); } catch (_) { /* pole ruumi */ }
+      return null;
+    }
+  },
+  save(data) {
+    this.pending = data;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.flush(), 300);
+  },
+  flush() {
+    if (!this.pending) return;
+    clearTimeout(this.timer);
+    this.write(JSON.stringify(this.pending));
+    this.pending = null;
+  },
+  write(json) {
+    let ok = false;
+    try { localStorage.setItem(APP_KEY, json); ok = true; } catch (e) { /* blokeeritud või mälu täis */ }
+    this.backend = ok ? 'brauseri localStorage' : TEMP_LABEL;
+    setSaveStatus(ok);
+  },
+  clear() {
+    this.pending = null;
+    clearTimeout(this.timer);
+    try { localStorage.removeItem(APP_KEY); } catch (e) { /* pole saadaval */ }
+  }
+};
+// Salvesta viimane muudatus ka siis, kui vaheleht suletakse kohe pärast klõpsu
+window.addEventListener('pagehide', () => Store.flush());
+
+/* ---------- 3. SKEEM JA MIGRATSIOON ---------- */
+const defaultState = () => ({
+  schema: SCHEMA_VERSION,
+  income: 1000,
+  fixedPlan: 40,
+  returnRate: 8,
+  allocations: clone(DEFAULT_ALLOCATIONS),
+  categories: clone(DEFAULT_CATEGORIES),
+  tx: [],
+  rules: clone(DEFAULT_RULES),
+  transfers: {},
+  history: {},
+  ui: {
+    view: 'dashboard', filter: 'all', simFormat: 'swedbank', inflation: false,
+    liveMonth: monthKey(), viewMonth: monthKey(),
+    theme: (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'
+  }
+});
+
+function migrate(raw) {
+  const base = defaultState();
+  if (!raw || typeof raw !== 'object') return base;
+  const s = { ...base, ...raw, ui: { ...base.ui, ...(raw.ui || {}) } };
+  for (const k of ['allocations', 'categories', 'tx', 'rules']) if (!Array.isArray(s[k])) s[k] = clone(base[k]);
+  s.income = Math.max(0, num(s.income, base.income));
+  s.fixedPlan = Math.max(0, num(s.fixedPlan, base.fixedPlan));
+  s.returnRate = clamp(num(s.returnRate, 8), 0, 30);
+
+  // Ülekanded: vanem kuju oli puhas tõeväärtus (true/false), uus kuju kannab ka tegelikku ülekantud summat
+  s.transfers = s.transfers && typeof s.transfers === 'object' ? s.transfers : {};
+  for (const mk of Object.keys(s.transfers)) {
+    const v = s.transfers[mk];
+    if (typeof v === 'boolean') s.transfers[mk] = { done: v, amount: 0 };
+    else if (v && typeof v === 'object') s.transfers[mk] = { done: !!v.done, amount: Math.max(0, num(v.amount, 0)) };
+    else delete s.transfers[mk];
+  }
+
+  // Kuude ajalugu: iga kirje jäädvustab mingil minevikukuul kehtinud tulu/püsikulud/eesmärgid
+  s.history = s.history && typeof s.history === 'object' ? s.history : {};
+  for (const mk of Object.keys(s.history)) {
+    const h = s.history[mk];
+    if (!/^\d{4}-\d{2}$/.test(mk) || !h || typeof h !== 'object' || !Array.isArray(h.allocations)) { delete s.history[mk]; continue; }
+    s.history[mk] = {
+      income: Math.max(0, num(h.income, 0)),
+      fixedPlan: Math.max(0, num(h.fixedPlan, 0)),
+      allocations: h.allocations.filter(a => a && a.id).map(a => ({ name: 'Eesmärk', invest: false, pct: 0, ...a }))
+    };
+  }
+
+  s.categories = s.categories.filter(c => c && c.id)
+    .map((c, i) => ({ color: PALETTE[i % PALETTE.length], daily: true, ...c, name: String(c.name || 'Nimetu') }));
+  if (!s.categories.some(c => c.id === FALLBACK_CAT)) s.categories.push(clone(DEFAULT_CATEGORIES.find(c => c.id === FALLBACK_CAT)));
+  const ids = new Set(s.categories.map(c => c.id));
+
+  s.tx = s.tx.filter(t => t && t.id && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && num(t.amount) > 0)
+    .map(t => ({ source: 'manual', reconciled: false, merchant: '', note: '', ...t,
+      amount: round2(num(t.amount)), cat: t.cat === null ? null : (ids.has(t.cat) ? t.cat : FALLBACK_CAT) }));
+  s.rules = s.rules.filter(r => r && r.pattern && ids.has(r.cat))
+    .map(r => ({ id: r.id || 'r-' + uid(), pattern: String(r.pattern).toUpperCase().trim(), cat: r.cat }));
+
+  let left = 100;
+  s.allocations = s.allocations.filter(a => a && a.id).map(a => {
+    const pct = clamp(Math.round(num(a.pct)), 0, left);
+    left -= pct;
+    return { name: 'Eesmärk', invest: false, ...a, pct };
+  });
+  if (!FILTERS[s.ui.filter]) s.ui.filter = 'all';
+  if (!VIEWS.some(v => v.id === s.ui.view)) s.ui.view = 'dashboard';
+  if (s.ui.theme !== 'light' && s.ui.theme !== 'dark') s.ui.theme = base.ui.theme;
+  s.ui.inflation = !!s.ui.inflation;
+  if (!/^\d{4}-\d{2}$/.test(s.ui.liveMonth)) s.ui.liveMonth = monthKey();
+  if (!/^\d{4}-\d{2}$/.test(s.ui.viewMonth)) s.ui.viewMonth = s.ui.liveMonth;
+  s.schema = SCHEMA_VERSION;
+  return s;
+}
+
+/* Kui rakendus avatakse uuel kalendrikuul, jäädvustatakse eelmise kuu sätted (tulu, püsikulud,
+   eesmärkide protsendid) muutumatuna ajalukku, enne kui kasutaja need uue kuu jaoks üle kirjutab. */
+function rolloverIfNeeded() {
+  const mk = monthKey();
+  if (state.ui.liveMonth === mk) return;
+  const wasViewingLive = state.ui.viewMonth === state.ui.liveMonth;
+  if (state.ui.liveMonth) {
+    state.history[state.ui.liveMonth] = { income: state.income, fixedPlan: state.fixedPlan, allocations: clone(state.allocations) };
+  }
+  state.ui.liveMonth = mk;
+  if (wasViewingLive || !state.ui.viewMonth) state.ui.viewMonth = mk;
+}
+
+// Kõik kuud, mida saab vaadata: jooksev kuu + ajalukku salvestatud kuud + kuud, millel on tehinguid
+function availableMonths() {
+  const set = new Set([monthKey(), ...Object.keys(state.history)]);
+  for (const t of state.tx) set.add(monthKey(t.date));
+  return [...set].sort().reverse();
+}
+
+/* ---------- 4. ARVUTUSMOOTOR ---------- */
+// mk puudumisel kasutatakse hetkel valitud vaate kuud (state.ui.viewMonth) või jooksvat kuud.
+// Ajaloolise kuu puhul loetakse tulu/püsikulud/eesmärgid sellel hetkel arhiveeritud väärtustest (state.history).
+function calc(mk = state.ui.viewMonth || monthKey()) {
+  const isLive = mk === monthKey();
+  const snap = isLive ? null : state.history[mk];
+  const income = snap ? snap.income : state.income;
+  const fixedPlan = snap ? snap.fixedPlan : state.fixedPlan;
+  const allocations = snap ? snap.allocations : state.allocations;
+  const dim = daysInMonth(mk), day = isLive ? new Date().getDate() : dim, t0 = todayISO();
+  const savingsPct = allocations.reduce((a, x) => a + x.pct, 0);
+  const savings = round2(income * savingsPct / 100);
+  const invest = round2(allocations.reduce((a, x) => a + (x.invest ? income * x.pct / 100 : 0), 0));
+  const rawPool = income - savings - fixedPlan;
+  const dailyPool = Math.max(0, rawPool);
+  const base = dailyPool / dim;
+  const dailyCats = new Set(state.categories.filter(c => c.daily).map(c => c.id));
+  const monthTx = state.tx.filter(t => monthKey(t.date) === mk);
+  const byCat = {}, perDay = Array(dim).fill(0);
+  let spentBefore = 0, spentToday = 0, spentDaily = 0, spentFixed = 0;
+
+  for (const t of monthTx) {
+    const key = t.cat ?? '';
+    byCat[key] = (byCat[key] || 0) + t.amount;
+    if (t.cat !== null && !dailyCats.has(t.cat)) { spentFixed += t.amount; continue; }
+    spentDaily += t.amount;
+    perDay[+t.date.slice(8) - 1] += t.amount;
+    if (t.date < t0) spentBefore += t.amount;
+    else if (t.date === t0) spentToday += t.amount;
+  }
+  // Ümbrikumudel: tänane limiit = baas × päevanumber − varem kulutatu (ülejääk kandub edasi)
+  const todayLimit = base * day - spentBefore;
+  const daysLeft = dim - day + 1;
+  const poolLeft = dailyPool - spentDaily;
+  return {
+    mk, dim, day, isLive, income, fixedPlan, allocations, daysLeft, savingsPct, savings, invest, rawPool, dailyPool, base,
+    monthTx, byCat, perDay, spentToday, spentDaily, spentFixed, todayLimit, leftToday: todayLimit - spentToday, carry: todayLimit - base,
+    poolLeft, compass: poolLeft / daysLeft, surplus: Math.max(0, base * day - spentDaily),
+    total: spentDaily + spentFixed
+  };
+}
+
+// Annuiteedi tulevikuväärtus: FV = P × ((1 + r)^n − 1) / r, igakuine liitintress
+const fv = (pmt, years, ratePct) => {
+  const r = ratePct / 100 / 12, n = years * 12;
+  return r ? pmt * (Math.pow(1 + r, n) - 1) / r : pmt * n;
+};
+
+/* ---------- 5. PANGATORU ---------- */
+function parseCSV(text) {
+  text = String(text).replace(/^﻿/, '');
+  const head = text.split(/\r?\n/, 1)[0];
+  const delim = (head.match(/;/g) || []).length >= (head.match(/,/g) || []).length ? ';' : ',';
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch !== '"') field += ch;
+      else if (text[i + 1] === '"') { field += '"'; i++; }
+      else quoted = false;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delim) { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += ch;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(f => f.trim()));
+}
+
+function parseDate(s = '') {
+  s = String(s).trim();
+  let m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+// Tunneb ära Swedbanki (;) ja LHV (,) väljavõtte päised. Tagastab ainult väljaminekud.
+function normalizeBankRows(rows) {
+  if (!rows.length) throw new Error('Fail on tühi.');
+  const head = rows[0].map(h => h.trim().toLowerCase());
+  const find = (...res) => { for (const re of res) { const i = head.findIndex(h => re.test(h)); if (i > -1) return i; } return -1; };
+  const col = {
+    date: find(/^kuupäev$/, /kuup/, /date/),
+    amount: find(/^summa$/, /summa/, /amount/),
+    name: find(/saaja\/maksja nimi/, /^saaja\/maksja$/, /nimi/, /payee|counterparty/),
+    desc: find(/selgitus/, /description|details/),
+    dc: find(/deebet|kreedit|d\/c/),
+    type: find(/reatüüp/),
+    ref: find(/arhii?v/, /tehingu id/)
+  };
+  if (col.date < 0 || col.amount < 0) throw new Error('CSV päisest ei leitud kuupäeva või summa veergu. Kasuta Swedbanki või LHV väljavõtet.');
+  const cell = (r, i) => (i > -1 && r[i] != null ? String(r[i]).trim() : '');
+
+  return rows.slice(1).map(r => {
+    if (col.type > -1 && cell(r, col.type) !== '20') return null; // Swedbank: 20 = tehing, muud = saldod
+    const date = parseDate(cell(r, col.date));
+    const raw = num(cell(r, col.amount), NaN);
+    if (!date || !Number.isFinite(raw) || raw === 0) return null;
+    const dc = cell(r, col.dc).toUpperCase();
+    if (dc ? dc !== 'D' : raw > 0) return null; // tulud jäävad v1-s välja
+    const desc = cell(r, col.desc);
+    const merchant = cell(r, col.name) || desc || 'Tundmatu saaja';
+    return { date, amount: round2(Math.abs(raw)), merchant, desc, ref: cell(r, col.ref) || `${date}|${raw}|${merchant}` };
+  }).filter(Boolean);
+}
+
+// ÜKS sisenemispunkt kõigile pangaandmetele (CSV, simulatsioon, tulevikus Open Banking)
+function ingestBankRows(rows) {
+  const stats = { matched: 0, ruled: 0, unknown: 0, dup: 0 };
+  const seen = new Set(state.tx.map(t => t.bankRef).filter(Boolean));
+  for (const r of rows) {
+    if (seen.has(r.ref)) { stats.dup++; continue; }
+    seen.add(r.ref);
+    const match = findManualMatch(r);
+    if (match) {
+      Object.assign(match, { reconciled: true, source: 'merged', merchant: r.merchant, bankDate: r.date, bankRef: r.ref });
+      stats.matched++;
+      continue;
+    }
+    const cat = ruleFor(r.merchant);
+    state.tx.push({ id: uid(), date: r.date, amount: r.amount, cat, note: r.desc, merchant: r.merchant,
+      source: 'bank', reconciled: false, bankRef: r.ref, byRule: !!cat });
+    cat ? stats.ruled++ : stats.unknown++;
+  }
+  commit();
+  return stats;
+}
+
+// Sama summa (sendi täpsusega) ja kuni ±3 päeva vahe; valitakse kuupäevalt lähim
+function findManualMatch(r) {
+  return state.tx
+    .filter(t => t.source === 'manual' && !t.reconciled && Math.abs(t.amount - r.amount) < 0.005 && Math.abs(dayDiff(t.date, r.date)) <= 3)
+    .sort((a, b) => Math.abs(dayDiff(a.date, r.date)) - Math.abs(dayDiff(b.date, r.date)))[0];
+}
+
+/* ---------- 6. REEGLITE MOOTOR ---------- */
+function merchantKey(m) {
+  const words = String(m).toUpperCase().replace(/[^A-Z0-9ÕÄÖÜŠŽ]+/g, ' ').trim().split(' ');
+  return (words[0] || '').length < 3 ? words.slice(0, 2).join(' ') : words[0];
+}
+function ruleFor(merchant) {
+  const M = String(merchant).toUpperCase();
+  const hit = state.rules.filter(r => M.includes(r.pattern)).sort((a, b) => b.pattern.length - a.pattern.length)[0];
+  return hit ? hit.cat : null;
+}
+function upsertRule(pattern, cat) {
+  pattern = String(pattern || '').trim().toUpperCase();
+  if (!pattern || !cat) return false;
+  const r = state.rules.find(x => x.pattern === pattern);
+  if (r) r.cat = cat; else state.rules.push({ id: 'r-' + uid(), pattern, cat });
+  return true;
+}
+function applyRules() {
+  let n = 0;
+  for (const t of state.tx) {
+    if (t.cat !== null || !t.merchant) continue;
+    const c = ruleFor(t.merchant);
+    if (c) { t.cat = c; t.byRule = true; n++; }
+  }
+  return n;
+}
+function setTxCategory(id, catId) {
+  const t = state.tx.find(x => x.id === id);
+  if (!t) return;
+  t.cat = catId || null;
+  t.byRule = false;
+  let msg = 'Kategooria muudetud.';
+  const key = t.cat && t.merchant ? merchantKey(t.merchant) : '';
+  if (key && upsertRule(key, t.cat)) {
+    const n = applyRules();
+    msg = `Õpitud reegel: „${key}“ on nüüd ${getCat(t.cat).name}.${n ? ` Lisaks sai kategooria veel ${nTx(n)}.` : ''}`;
+  }
+  commit();
+  toast(msg);
+}
+
+/* ---------- 7. VAATED ---------- */
+let state = defaultState();
+let kp = ''; // numbrilaua sisestus (ei salvestata)
+const app = document.getElementById('app');
+
+const getCat = id => state.categories.find(c => c.id === id) || UNCAT;
+const monogram = (cat, size = '') => `<span class="mono-badge ${size}" style="background:${hexA(cat.color, .16)};color:${cat.color}" aria-hidden="true">${esc((cat.name || '?').trim().charAt(0).toUpperCase() || '?')}</span>`;
+const bind = (V, k, cls = '') => `<span data-bind="${k}" class="${cls}">${esc(V[k])}</span>`;
+const bar = (width, color, key = '', h = 'h-2') =>
+  `<div class="${h} rounded-full track overflow-hidden"><div ${key ? `data-bar="${key}"` : ''} class="h-full rounded-full bar-fill" style="width:${width};background:${color}"></div></div>`;
+const card = (title, body, cls = '', aside = '') =>
+  `<section class="card ${cls}"><div class="card-title"><h2>${title}</h2>${aside}</div>${body}</section>`;
+const field = (label, input) => `<label class="block">${label ? `<span class="lbl">${label}</span>` : ''}${input}</label>`;
+const stat = (label, val) => `<div><div style="color:var(--hero-muted)">${label}</div><div class="num font-semibold text-sm">${val}</div></div>`;
+const catOptions = (sel, withNone = false) =>
+  (withNone ? `<option value="" ${sel === null ? 'selected' : ''}>Õpeta kategooria…</option>` : '') +
+  state.categories.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+const saveLabel = () => (saveOk === null ? 'Laadin' : saveOk ? '● Salvestatud seadmesse' : '● Ainult ajutises mälus');
+
+function txStatus(t) {
+  if (t.reconciled) return { cls: 'row-green', label: 'Pangaga kinnitatud', dot: '#2f855a' };
+  if (t.cat === null) return { cls: 'row-yellow', label: 'Tundmatu', dot: '#e9b949' };
+  if (t.source === 'bank') return { cls: 'row-blue', label: t.byRule ? 'Pangast, reegliga' : 'Pangast, sinu valik', dot: '#2b6cb0' };
+  return { cls: '', label: 'Ootab panka', dot: '#a0aec0' };
+}
+
+function liveValues(c) {
+  const V = {
+    savings: eur(c.savings), savingsPct: `${c.savingsPct}%`, invest: eur(c.invest), dailyPool: eur(c.dailyPool),
+    base: eur(c.base), todayLimit: eur(c.todayLimit), leftToday: eur(c.leftToday),
+    carry: `${c.carry >= 0 ? '+' : '−'}${eur(Math.abs(c.carry))}`, compass: eur(c.compass), poolLeft: eur(c.poolLeft),
+    warn: c.rawPool < 0 ? `Plaan ületab tulu ${eur(-c.rawPool)} võrra. Vähenda säästuprotsente või püsikulusid.` : '',
+    'bar-today': `${pctOf(c.spentToday, c.todayLimit)}%`, 'bar-month': `${pctOf(c.spentDaily, c.dailyPool)}%`,
+    'bar-savings': `${clamp(c.savingsPct, 0, 100)}%`, 'bar-fixed': `${pctOf(c.spentFixed, c.fixedPlan)}%`
+  };
+  for (const a of state.allocations) {
+    V[`a-pct-${a.id}`] = `${a.pct}%`;
+    V[`a-eur-${a.id}`] = eur(state.income * a.pct / 100);
+    V[`a-name-${a.id}`] = a.name;
+  }
+  return V;
+}
+
+function refreshLive() {
+  const c = calc(), V = liveValues(c);
+  $$('[data-bind]').forEach(el => { if (el.dataset.bind in V) el.textContent = V[el.dataset.bind]; });
+  $$('[data-bar]').forEach(el => { if (el.dataset.bar in V) el.style.width = V[el.dataset.bar]; });
+  $$('[data-sign]').forEach(el => el.classList.toggle('neg', c[el.dataset.sign] < 0));
+}
+
+function render() {
+  rolloverIfNeeded();
+  const activeId = document.activeElement && app.contains(document.activeElement) ? document.activeElement.id : '';
+  const c = calc(), V = liveValues(c);
+  const view = { dashboard: viewDashboard, quick: viewQuick, strategy: viewStrategy, settings: viewSettings }[state.ui.view] || viewDashboard;
+  app.innerHTML = viewHeader(c) + `<main class="max-w-6xl mx-auto px-4 py-6">${view(c, V)}</main>`;
+  if (activeId) document.getElementById(activeId)?.focus();
+}
+
+function commit() { Store.save(state); render(); }
+
+function setSaveStatus(ok) {
+  saveOk = ok;
+  const el = $('#save-status');
+  if (el) { el.textContent = saveLabel(); el.style.color = ok ? 'var(--save)' : 'var(--warn)'; }
+}
+
+function applyThemeMeta() {
+  document.documentElement.dataset.theme = state.ui.theme;
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', state.ui.theme === 'dark' ? '#09090b' : '#f8fafc');
+}
+
+const navButtons = () => VIEWS.map(v =>
+  `<button data-action="nav" data-view="${v.id}" class="navbtn ${state.ui.view === v.id ? 'on' : ''}" ${state.ui.view === v.id ? 'aria-current="page"' : ''}>${v.label}</button>`).join('');
+
+function viewHeader(c) {
+  const months = availableMonths();
+  const monthOptions = months.map(mk =>
+    `<option value="${mk}" ${mk === c.mk ? 'selected' : ''}>${mk === monthKey() ? 'Jooksev kuu — ' : ''}${monthLabel(mk)}</option>`).join('');
+  return `<header class="topbar">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <div class="brand">Quant<span>Budget</span></div>
+        <select class="input input-sm input-ghost" style="padding-left:0;font-weight:600" data-ui="viewMonth" aria-label="Vali vaadatav kuu">${monthOptions}</select>
+      </div>
+      <nav class="flex gap-1 overflow-x-auto">${navButtons()}</nav>
+      <div class="flex items-center gap-3">
+        <button data-action="theme" class="theme-toggle" role="switch" aria-checked="${state.ui.theme === 'dark'}" aria-label="Vaheta hele ja tume režiim"><span class="thumb"></span></button>
+        <div id="save-status" class="text-xs whitespace-nowrap" style="color:${saveOk === null ? 'var(--muted)' : (saveOk ? 'var(--save)' : 'var(--warn)')}">${saveLabel()}</div>
+      </div>
+    </div>
+  </header>`;
+}
+
+function dayStrip(c) {
+  const todayIdx = c.day - 1;
+  const cols = c.perDay.map((v, i) => {
+    const h = i > todayIdx ? 12 : clamp(c.base > 0 ? 20 + (v / c.base) * 40 : 20, 12, 100);
+    const cls = i > todayIdx ? '' : (v <= c.base ? 'ok' : 'over');
+    const showNum = i === 0 || i === c.dim - 1 || i === todayIdx || (i + 1) % 5 === 0;
+    return `<div class="daycol">
+      <i class="${cls} ${i === todayIdx ? 'today' : ''}" style="height:${h}%" title="${i + 1}. päev: ${eur(v)}"></i>
+      <span class="day-num" style="${i === todayIdx ? 'color:var(--accent);font-weight:700' : ''}">${showNum ? i + 1 : ''}</span>
+    </div>`;
+  }).join('');
+  return `<div class="daystrip" aria-label="Kuu päevad: roheline = limiidi sees, punane = üle limiidi, number all näitab kuupäeva">${cols}</div>`;
+}
+
+function uploadZone() {
+  return `<div data-dropzone data-action="pickFile" data-kind="csv" class="dropzone" role="button" tabindex="0">
+      <p class="font-semibold">Lohista panga CSV-fail siia</p>
+      <p class="text-sm muted mt-1">või klõpsa ja vali fail. Sobivad Swedbanki ja LHV väljavõtted.</p>
+    </div>
+    <input type="file" accept=".csv,text/csv" data-file="csv" hidden>
+    <div class="flex flex-wrap gap-2 items-center mt-3">
+      <select class="input w-auto" data-ui="simFormat" aria-label="Simulatsiooni formaat">
+        <option value="swedbank" ${state.ui.simFormat === 'swedbank' ? 'selected' : ''}>Swedbanki formaat</option>
+        <option value="lhv" ${state.ui.simFormat === 'lhv' ? 'selected' : ''}>LHV formaat</option>
+      </select>
+      <button data-action="simulate" class="btn btn-dark">Simuleeri Swedbank/LHV CSV andmeid</button>
+    </div>`;
+}
+
+function txList(list, empty) {
+  if (!list.length) return `<p class="text-sm muted py-6 text-center">${empty}</p>`;
+  return `<ul class="tx-divide">${list.map(t => {
+    const cat = getCat(t.cat), st = txStatus(t);
+    return `<li class="flex items-center gap-3 py-2">
+      ${monogram(cat)}
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium truncate">${esc(t.merchant || cat.name)}</div>
+        <div class="text-xs muted"><i class="dot" style="background:${st.dot}"></i> ${fmtDay(t.date)}, ${st.label.toLowerCase()}</div>
+      </div>
+      <span class="num text-sm font-semibold">−${eur(t.amount)}</span>
+      <button data-action="deleteTx" data-id="${t.id}" class="icon-btn" aria-label="Kustuta kulu">✕</button>
+    </li>`;
+  }).join('')}</ul>`;
+}
+
+/* Vaade 1: Ülevaade */
+function viewDashboard(c, V) {
+  if (!c.isLive) return viewHistoryMonth(c);
+
+  const trf = state.transfers[c.mk] || { done: false, amount: 0 };
+  const done = trf.done;
+  const others = state.allocations.filter(a => !a.invest && a.pct > 0);
+  const monthEnd = c.day === c.dim && c.poolLeft > 0.5;
+
+  const daily = `<section class="card hero">
+    <div class="flex justify-between text-sm" style="color:var(--hero-muted)"><span>Tänane limiit</span><span>${c.day}. päev ${c.dim}-st</span></div>
+    <div class="bigno num mt-2 pos ${c.leftToday < 0 ? 'neg' : ''}" data-sign="leftToday">${bind(V, 'leftToday')}</div>
+    <div class="mt-4">${bar(V['bar-today'], 'var(--accent)', 'bar-today')}</div>
+    <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
+      ${stat('Algne limiit', bind(V, 'todayLimit'))}${stat('Baas päevas', bind(V, 'base'))}${stat('Eilsetest', bind(V, 'carry'))}
+    </div>
+    <div class="mt-5">${dayStrip(c)}</div>
+    <p class="text-xs mt-2" style="color:var(--hero-muted)">Iga tulp on üks päev. Kasutamata raha kandub järgmise päeva limiiti.</p>
+    <button data-action="nav" data-view="quick" class="btn btn-sea w-full mt-4">Lisa kulu</button>
+  </section>`;
+
+  const endBanner = monthEnd ? card('Kuu lõpu ülejääk', `
+    <p class="text-sm">Kuu on läbi ja elamiskulude eelarvest jäi üle <b class="num" style="color:var(--save)">${eur(c.poolLeft)}</b>. Suurepärane hetk kanda see raha turgudele investeerimiseks.</p>`, 'lg:col-span-3') : '';
+
+  const allocs = state.allocations.map(a => `
+    <div>
+      <div class="flex items-center gap-2">
+        <input id="an-${a.id}" class="input input-ghost flex-1 min-w-0" value="${esc(a.name)}" data-alloc-field="name" data-id="${a.id}" aria-label="Eesmärgi nimi">
+        <span class="num text-sm font-semibold whitespace-nowrap">${bind(V, `a-pct-${a.id}`)} = ${bind(V, `a-eur-${a.id}`)}</span>
+      </div>
+      <input id="ar-${a.id}" type="range" min="0" max="100" step="1" value="${a.pct}" data-alloc="${a.id}" class="w-full" aria-label="${esc(a.name)} protsent">
+      <div class="flex justify-between items-center text-xs muted">
+        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" data-alloc-field="invest" data-id="${a.id}" ${a.invest ? 'checked' : ''}> Investeering (arvestatakse liitintressi mudelis)</label>
+        <button data-action="delAlloc" data-id="${a.id}" class="link-danger">Eemalda</button>
+      </div>
+    </div>`).join('');
+
+  const pyf = card('Maksa esmalt endale', `
+    <div class="grid sm:grid-cols-2 gap-3">
+      ${field('Selle kuu eeldatav tulu (€)', `<input id="m-income" type="number" inputmode="decimal" min="0" step="10" class="input num" value="${state.income}" data-model="income">`)}
+      ${field('Planeeritud püsikulud (€)', `<input id="m-fixed" type="number" inputmode="decimal" min="0" step="10" class="input num" value="${state.fixedPlan}" data-model="fixedPlan">`)}
+    </div>
+    <div class="mt-4 space-y-3">${allocs || '<p class="text-sm muted">Säästueesmärke pole. Lisa esimene.</p>'}</div>
+    <button data-action="addAlloc" class="btn btn-ghost btn-sm mt-3">+ Lisa säästueesmärk</button>
+    <div class="mt-4">${bar(V['bar-savings'], 'var(--accent)', 'bar-savings')}
+      <div class="flex justify-between text-xs muted mt-1"><span>Säästad ${bind(V, 'savingsPct')} tulust</span><span>Päevaeelarvesse jääb ${bind(V, 'dailyPool')}</span></div>
+    </div>
+    <p data-bind="warn" class="text-sm mt-2" style="color:var(--bad)">${esc(V.warn)}</p>
+    <div class="cta ${done ? 'cta-done' : ''} mt-3">
+      <div>
+        ${done ? `<strong class="inline-flex items-center gap-1.5" style="color:var(--save)">${CHECK_SVG} Selle kuu ülekanne on tehtud</strong>` : `<strong>Kanna ${bind(V, 'invest')} KOHE investeerimiskontole ära!</strong>`}
+        <div class="text-sm muted mt-1">Säästud kokku ${bind(V, 'savings')}${others.length ? `. Lisaks: ${others.map(a => `${bind(V, `a-name-${a.id}`)} ${bind(V, `a-eur-${a.id}`)}`).join(', ')}` : ''}</div>
+      </div>
+      <button data-action="transfer" class="btn ${done ? 'btn-ghost' : 'btn-dark'}">${done ? 'Märgi tegemata' : 'Märgi tehtuks'}</button>
+    </div>`, 'lg:col-span-2');
+
+  const compass = card('Kuu jooksev bilanss', `
+    <p class="text-sm muted mb-2">Raha igapäevasteks kulutusteks: puhas likviidne jääk pärast säästude ja püsikulude mahaarvamist.</p>
+    <div class="flex items-baseline justify-between gap-2"><span class="text-sm muted">Päevaeelarvest alles</span>
+      <span class="num text-2xl font-bold ${c.poolLeft < 0 ? 'neg' : ''}" data-sign="poolLeft">${bind(V, 'poolLeft')}</span></div>
+    <div class="mt-2">${bar(V['bar-month'], 'var(--accent)', 'bar-month')}</div>
+    <p class="text-sm muted mt-2">Kulutatud ${eur(c.spentDaily)} summast ${bind(V, 'dailyPool')}. Jäänud on ${c.daysLeft} päeva, keskmiselt ${bind(V, 'compass')} päevas.</p>
+    <div class="mt-5 flex justify-between text-sm"><span>Püsikulud (väljaspool päevalimiiti)</span><span class="num">${eur(c.spentFixed)} / ${eur(state.fixedPlan)}</span></div>
+    <div class="mt-1">${bar(V['bar-fixed'], 'var(--fixed-bar)', 'bar-fixed')}</div>`);
+
+  const slices = [...state.categories, UNCAT]
+    .map(cat => ({ label: cat.name, color: cat.color, value: c.byCat[cat.id ?? ''] || 0 }))
+    .filter(s => s.value > 0);
+  const pie = card('Kulude jaotus', `
+    <div class="flex justify-center">${pieSVG(slices)}</div>
+    <div class="mt-4 space-y-2">${slices.map(s => `
+      <div class="flex items-center gap-2">
+        <span class="mono-badge" style="background:${hexA(s.color, .16)};color:${s.color}" aria-hidden="true">${esc(s.label.charAt(0).toUpperCase())}</span>
+        <div class="flex-1"><div class="flex justify-between text-sm"><span>${esc(s.label)}</span><span class="num">${eur(s.value)}</span></div>
+        ${bar(`${pctOf(s.value, c.total)}%`, s.color, '', 'h-1')}</div>
+      </div>`).join('')}</div>`);
+
+  const recent = card('Viimased kulud', txList(c.monthTx.slice().sort(byDateDesc).slice(0, 7), 'Selle kuu kulusid veel pole. Lisa esimene kiirlisajas.'), '',
+    `<button data-action="nav" data-view="strategy" class="link">Kõik tehingud</button>`);
+
+  const importCard = card('Panga väljavõtte import', uploadZone(), 'lg:col-span-1');
+  const portfolio = portfolioCard();
+
+  return `<div class="grid gap-4 lg:grid-cols-3">${daily}${pyf}${endBanner}</div>
+    <div class="grid gap-4 lg:grid-cols-3 mt-4">${compass}${pie}${recent}</div>
+    <div class="grid gap-4 lg:grid-cols-3 mt-4">${portfolio}${importCard}</div>`;
+}
+
+function pieSVG(slices, emptyMsg = 'Kulusid veel pole.') {
+  const total = slices.reduce((a, s) => a + s.value, 0);
+  if (!total) return `<div class="h-44 flex items-center text-sm muted">${emptyMsg}</div>`;
+  const cs = getComputedStyle(document.documentElement);
+  const inkC = (cs.getPropertyValue('--ink') || '#0f172a').trim();
+  const mutedC = (cs.getPropertyValue('--muted') || '#475569').trim();
+  const cardC = (cs.getPropertyValue('--card') || '#ffffff').trim();
+  const R = 80, C = 90;
+  let a0 = -Math.PI / 2;
+  const parts = slices.map(s => {
+    const frac = s.value / total;
+    if (frac > 0.9999) return `<circle cx="${C}" cy="${C}" r="${R}" fill="${s.color}"><title>${esc(s.label)}</title></circle>`;
+    const a1 = a0 + frac * 2 * Math.PI;
+    const p = a => `${(C + R * Math.cos(a)).toFixed(2)},${(C + R * Math.sin(a)).toFixed(2)}`;
+    const d = `M${C},${C} L${p(a0)} A${R},${R} 0 ${frac > 0.5 ? 1 : 0} 1 ${p(a1)} Z`;
+    a0 = a1;
+    return `<path d="${d}" fill="${s.color}" stroke="${cardC}" stroke-width="2"><title>${esc(s.label)}: ${eur(s.value)}</title></path>`;
+  }).join('');
+  return `<svg viewBox="0 0 180 180" class="w-44 h-44" role="img" aria-label="Jaotuse diagramm">${parts}
+    <circle cx="90" cy="90" r="48" fill="${cardC}"/>
+    <text x="90" y="86" text-anchor="middle" font-size="10" fill="${mutedC}">Kokku</text>
+    <text x="90" y="104" text-anchor="middle" font-size="15" font-weight="700" fill="${inkC}">${eur(total)}</text></svg>`;
+}
+
+/* Kuude ajalugu: säästueesmärkide portfell (kumulatiivne) ja tegeliku investeeringu täitumus */
+function portfolioTotals() {
+  const totals = {};
+  const add = (income, allocations) => {
+    for (const a of allocations) {
+      const amt = round2(income * a.pct / 100);
+      const row = totals[a.id] || (totals[a.id] = { id: a.id, name: a.name, invest: a.invest, total: 0 });
+      row.total = round2(row.total + amt);
+      row.name = a.name;
+      row.invest = a.invest;
+    }
+  };
+  for (const snap of Object.values(state.history)) add(snap.income, snap.allocations);
+  add(state.income, state.allocations); // jooksva kuu plaanitud panus loetakse juba kaasa
+  return Object.values(totals).sort((a, b) => b.total - a.total);
+}
+
+function investedTotals() {
+  let planned = 0;
+  const add = (income, allocations) => {
+    planned = round2(planned + allocations.filter(a => a.invest).reduce((s, a) => s + income * a.pct / 100, 0));
+  };
+  for (const snap of Object.values(state.history)) add(snap.income, snap.allocations);
+  add(state.income, state.allocations);
+  const actual = round2(Object.values(state.transfers).reduce((s, t) => s + (t && t.done ? (t.amount || 0) : 0), 0));
+  return { planned, actual };
+}
+
+function portfolioCard() {
+  const totals = portfolioTotals();
+  const grand = totals.reduce((s, a) => s + a.total, 0);
+  const colored = totals.map((a, i) => ({ ...a, color: PALETTE[i % PALETTE.length] }));
+  const slices = colored.map(a => ({ label: a.name, color: a.color, value: a.total }));
+  const rows = colored.map(a => `
+    <div class="flex items-center gap-2">
+      <span class="mono-badge" style="background:${hexA(a.color, .16)};color:${a.color}" aria-hidden="true">${esc(a.name.charAt(0).toUpperCase())}</span>
+      <div class="flex-1"><div class="flex justify-between text-sm"><span>${esc(a.name)}${a.invest ? ' <span class="text-xs muted">· investeering</span>' : ''}</span><span class="num font-semibold">${eur(a.total)}</span></div>
+      ${bar(`${pctOf(a.total, grand)}%`, a.color, '', 'h-1')}</div>
+    </div>`).join('');
+  return card('Säästueesmärkide portfell', `
+    <p class="text-sm muted mb-2">Kõigi kuude (sh jooksva) plaanitud säästude kogusumma eesmärkide kaupa.</p>
+    <div class="flex justify-center">${pieSVG(slices, 'Eesmärke pole veel seadistatud.')}</div>
+    <div class="mt-4 space-y-2">${rows || '<p class="text-sm muted text-center py-4">Eesmärke pole veel seadistatud.</p>'}</div>
+    <p class="text-sm mt-3 pt-3" style="border-top:1px solid var(--line-soft)">Kokku plaani järgi kogutud: <b class="num">${eur(grand)}</b></p>`, 'lg:col-span-2');
+}
+
+function investedStat() {
+  const { planned, actual } = investedTotals();
+  const pct = pctOf(actual, planned);
+  return `<div class="flex flex-wrap items-end justify-between gap-4 mb-5 pb-5" style="border-bottom:1px solid var(--line-soft)">
+    <div><div class="text-xs muted">Tegelikult investeeritud (kinnitatud ülekanded)</div><div class="num text-2xl font-bold" style="color:var(--save)">${eur(actual)}</div></div>
+    <div><div class="text-xs muted">Plaanitud kokku (kõik kuud)</div><div class="num text-2xl font-bold">${eur(planned)}</div></div>
+    <div style="min-width:9rem;flex:1 1 9rem"><div class="text-xs muted mb-1">Täitumus ${Math.round(pct)}%</div>${bar(`${pct}%`, 'var(--save)')}</div>
+  </div>`;
+}
+
+/* Ajaloolise kuu lugemisvaade — andmeid ei saa siin muuta */
+function viewHistoryMonth(c) {
+  const trf = state.transfers[c.mk] || { done: false, amount: 0 };
+  const summary = card(`Kuu kokkuvõte — ${monthLabel(c.mk)}`, `
+    <p class="text-sm muted mb-3">Ajalooline vaade. Siin kuvatud sätted (tulu, eesmärgid) on jäädvustatud sellel kuul kehtinud kujul ja neid ei saa tagantjärele muuta.</p>
+    <div class="grid sm:grid-cols-3 gap-3 text-sm">
+      <div><div class="muted">Kuu tulu</div><div class="num font-semibold">${eur(c.income)}</div></div>
+      <div><div class="muted">Säästud (plaan)</div><div class="num font-semibold">${eur(c.savings)} (${c.savingsPct}%)</div></div>
+      <div><div class="muted">Investeeringusse</div><div class="num font-semibold">${eur(c.invest)}</div></div>
+      <div><div class="muted">Püsikulud</div><div class="num font-semibold">${eur(c.spentFixed)} / ${eur(c.fixedPlan)}</div></div>
+      <div><div class="muted">Elamiskulud</div><div class="num font-semibold">${eur(c.spentDaily)} / ${eur(c.dailyPool)}</div></div>
+      <div><div class="muted">Kuu lõpu jääk</div><div class="num font-semibold ${c.poolLeft < 0 ? 'neg' : ''}">${eur(c.poolLeft)}</div></div>
+    </div>
+    <p class="text-sm mt-4">Maksa-esmalt-endale ülekanne: ${trf.done ? `<b style="color:var(--save)">tehtud, ${eur(trf.amount)}</b>` : '<b style="color:var(--bad)">tegemata jäänud</b>'}</p>`, 'lg:col-span-3');
+
+  const slices = [...state.categories, UNCAT]
+    .map(cat => ({ label: cat.name, color: cat.color, value: c.byCat[cat.id ?? ''] || 0 }))
+    .filter(s => s.value > 0);
+  const pie = card('Kulude jaotus', `<div class="flex justify-center">${pieSVG(slices)}</div>`);
+  const recent = card('Kuu tehingud', txList(c.monthTx.slice().sort(byDateDesc), 'Sel kuul tehinguid ei olnud.'), 'lg:col-span-2');
+
+  return `<div class="grid gap-4 lg:grid-cols-3">${summary}</div>
+    <div class="grid gap-4 lg:grid-cols-3 mt-4">${pie}${recent}</div>`;
+}
+
+/* Vaade 2: Kiirlisaja */
+function viewQuick(c, V) {
+  const has = num(kp) > 0;
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', 'del'];
+  const todays = c.monthTx.filter(t => t.date === todayISO()).sort(byDateDesc);
+  return `<div class="max-w-sm mx-auto">
+    <section class="card hero text-center">
+      <div class="text-sm" style="color:var(--hero-muted)">Täna alles</div>
+      <div class="text-3xl font-bold num pos ${c.leftToday < 0 ? 'neg' : ''}" data-sign="leftToday">${bind(V, 'leftToday')}</div>
+      <div class="kp-display num mt-3" aria-live="polite"><span style="opacity:.5">€</span> <span id="kp-display">${kp || '0'}</span></div>
+    </section>
+    <div class="grid grid-cols-3 gap-2 mt-3">${keys.map(k =>
+      `<button data-action="key" data-key="${k}" class="key" aria-label="${k === 'del' ? 'Kustuta number' : k}">${k === 'del' ? '⌫' : k}</button>`).join('')}</div>
+    <p class="text-center text-sm muted mt-4 mb-2">Vali kategooria ja kulu salvestub kohe</p>
+    <div class="grid grid-cols-2 gap-2">${state.categories.map(cat =>
+      `<button data-action="quickAdd" data-cat="${cat.id}" class="catbtn ${has ? '' : 'dim'}" style="--c:${cat.color}">
+        ${monogram(cat, 'lg')}<span class="text-sm font-semibold">${esc(cat.name)}</span></button>`).join('')}</div>
+    ${card('Tänased kulud', txList(todays, 'Täna pole veel kulusid lisatud.'), 'mt-4', `<span class="num">${eur(todays.reduce((a, t) => a + t.amount, 0))}</span>`)}
+  </div>`;
+}
+
+/* Vaade 3: Strateegiatuba */
+function viewStrategy(c) {
+  const list = c.monthTx.slice().sort(byDateDesc);
+  const [, fn] = FILTERS[state.ui.filter] || FILTERS.all;
+  const chips = Object.entries(FILTERS).map(([k, [label, f]]) =>
+    `<button data-action="filter" data-filter="${k}" class="chip ${state.ui.filter === k ? 'on' : ''}">${label} <span style="opacity:.6">${list.filter(f).length}</span></button>`).join('');
+  const rows = list.filter(fn).map(t => {
+    const st = txStatus(t);
+    return `<tr class="${st.cls}">
+      <td class="num whitespace-nowrap">${fmtDay(t.date)}${t.bankDate && t.bankDate !== t.date ? `<div class="text-xs muted">pangas ${fmtDay(t.bankDate)}</div>` : ''}</td>
+      <td><div class="font-medium">${esc(t.merchant || 'Käsitsi lisatud')}</div><div class="text-xs muted"><i class="dot" style="background:${st.dot}"></i> ${st.label}</div></td>
+      <td style="min-width:10rem"><select class="input input-sm ${t.cat === null ? 'input-warn' : ''}" data-tx-cat="${t.id}" aria-label="Kategooria">${catOptions(t.cat, t.cat === null)}</select></td>
+      <td class="num text-right whitespace-nowrap font-semibold">−${eur(t.amount)}</td>
+      <td class="text-right"><button data-action="deleteTx" data-id="${t.id}" class="icon-btn" aria-label="Kustuta tehing">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const recon = card('Pangatehingute kontroll', `
+    <p class="text-sm muted mb-3">Äpp võrdleb panga tehinguid sinu käsitsi lisatud kuludega: sama summa ja kuni 3 päeva vahe. Sobivad read liidetakse üheks ja muutuvad roheliseks. Kollasele reale vali kategooria – äpp jätab selle meelde ja kasutab edaspidi ise.</p>
+    ${uploadZone()}
+    <div class="flex flex-wrap gap-2 mt-5 mb-3">${chips}</div>
+    <div class="overflow-x-auto"><table class="tbl">
+      <thead><tr><th>Kuupäev</th><th>Tehing</th><th>Kategooria</th><th class="text-right">Summa</th><th><span class="sr-only">Tegevus</span></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="text-center muted py-6">Selles vaates tehinguid pole.</td></tr>'}</tbody>
+    </table></div>`, 'lg:col-span-2');
+
+  const rules = card('Õpitud reeglid', `
+    <p class="text-sm muted mb-3">Kui panga tehingu saaja nimes on see sõna, saab tehing automaatselt valitud kategooria.</p>
+    <div class="flex flex-wrap gap-2 mb-3">
+      <input id="new-rule-pattern" class="input flex-1 min-w-0" placeholder="nt WOLT" aria-label="Märksõna">
+      <select id="new-rule-cat" class="input flex-1 min-w-0" aria-label="Kategooria">${catOptions(FALLBACK_CAT)}</select>
+      <button data-action="addRule" class="btn btn-dark">Lisa reegel</button>
+    </div>
+    <ul class="space-y-1 overflow-auto" style="max-height:26rem">${state.rules.slice().sort((a, b) => a.pattern.localeCompare(b.pattern)).map(r => `
+      <li class="flex items-center gap-2"><code class="rule">${esc(r.pattern)}</code>
+        <select class="input input-sm flex-1 min-w-0" data-rule-cat="${r.id}" aria-label="Reegli kategooria">${catOptions(r.cat)}</select>
+        <button data-action="delRule" data-id="${r.id}" class="icon-btn" aria-label="Kustuta reegel">✕</button></li>`).join('') || '<li class="text-sm muted">Reegleid veel pole.</li>'}</ul>`);
+
+  const investedCard = card('Tegelik vs plaanitud investeering', investedStat(), 'lg:col-span-3');
+
+  return `<div class="grid gap-4 lg:grid-cols-3">${recon}${rules}${investedCard}${viewFV(c)}</div>`;
+}
+
+function viewFV(c) {
+  const inflation = !!state.ui.inflation;
+  const rate = state.returnRate;
+  const effRate = inflation ? Math.max(0, rate - INFLATION_RATE) : rate;
+  const sc = [
+    { name: 'Baasplaan', p: c.invest, hex: '#3b82f6' },
+    { name: 'Optimeeritud plaan', p: c.invest + c.surplus, hex: '#eab308' }
+  ];
+  const rows = sc.map(s => `<tr><td><i class="dot" style="background:${s.hex}"></i> ${s.name}</td>
+    <td class="num text-right">${eur(s.p)}</td><td class="num text-right">${eur(fv(s.p, 5, effRate))}</td><td class="num text-right font-bold">${eur(fv(s.p, 10, effRate))}</td></tr>`).join('');
+  const paid = c.invest * 120, grown = fv(c.invest, 10, effRate);
+  return card('Liitintressi mudel', `
+    <div class="grid md:grid-cols-2 gap-6 items-center">
+      <div>
+        <div class="formula">FV = P × ((1 + r)<sup>n</sup> − 1) / r</div>
+        <p class="text-sm muted mt-2">P on igakuine sissemakse, r on aastatootlus jagatud 12-ga ja n on kuude arv (5 aastat = 60, 10 aastat = 120). Intress liitub igal kuul.</p>
+        <div class="mt-3 flex flex-wrap items-end gap-4">
+          <div style="max-width:12rem">${field('Eeldatav aastatootlus (%)', `<input id="m-rate" type="number" min="0" max="30" step="0.5" class="input num" value="${rate}" data-model="returnRate">`)}</div>
+          <label class="text-sm flex items-center gap-2 mb-2"><input type="checkbox" data-ui-bool="inflation" ${inflation ? 'checked' : ''}> Korrigeeri inflatsiooniga (baasis 2,5%)</label>
+        </div>
+        ${inflation ? `<p class="text-sm mt-1" style="color:var(--accent)">Kõik tulemused on kuvatud tänases ostujõus.</p>` : ''}
+        <div class="overflow-x-auto"><table class="tbl mt-3">
+          <thead><tr><th>Stsenaarium</th><th class="text-right">Kuus</th><th class="text-right">5 aastat</th><th class="text-right">10 aastat</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>
+        <p class="text-sm mt-3">Plaani järgi maksad 10 aastaga sisse <b class="num">${eur(paid)}</b> ja intress lisab sellele <b class="num" style="color:var(--save)">${eur(grown - paid)}</b>.</p>
+      </div>
+      <div>${fvChart(sc, effRate)}<p class="text-xs muted mt-2">Märkus: Mudel eeldab stabiilset keskmist tootlust. Tegelik turu volatiilsus võib tulemust muuta.</p></div>
+    </div>
+    <p class="text-xs muted mt-4">Tegemist on õppeotstarbelise simulatsiooniga, mitte investeerimisnõuandega. Tegelik tootlus kõigub.</p>`, 'lg:col-span-3');
+}
+
+function fvChart(series, rate, years = 10) {
+  const cs = getComputedStyle(document.documentElement);
+  const lineC = (cs.getPropertyValue('--line') || '#e2e8f0').trim();
+  const W = 360, H = 210, L = 46, R = 12, T = 10, B = 24;
+  const pts = series.map(s => Array.from({ length: years + 1 }, (_, y) => fv(s.p, y, rate)));
+  const max = Math.max(1, ...pts.flat());
+  const x = i => L + i * (W - L - R) / years;
+  const y = v => T + (1 - v / max) * (H - T - B);
+  const k = v => (v >= 1000 ? `${Math.round(v / 1000)} tuh` : Math.round(v));
+  const grid = [0, 0.5, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}" stroke="${lineC}"/>
+    <text x="${L - 6}" y="${y(max * f) + 3}" text-anchor="end" class="axis">${k(max * f)} €</text>`).join('');
+  const xl = [0, 5, 10].map(i => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" class="axis">${i} a</text>`).join('');
+  const lines = pts.map((p, si) => `<polyline fill="none" stroke="${series[si].hex}" stroke-width="2.5" stroke-linejoin="round" points="${p.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>` +
+    [5, 10].map(i => `<circle cx="${x(i)}" cy="${y(p[i])}" r="4" fill="${series[si].hex}"><title>${i} aastat: ${eur(p[i])}</title></circle>`).join('')).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="w-full" role="img" aria-label="Säästude kasv 10 aasta jooksul">${grid}${xl}${lines}</svg>`;
+}
+
+/* Vaade 4: Seaded */
+function viewSettings() {
+  const cats = state.categories.map(cat => `
+    <div class="flex flex-wrap items-center gap-2 py-2" style="border-bottom:1px solid var(--line-soft)">
+      ${monogram(cat)}
+      <input id="cn-${cat.id}" class="input input-sm flex-1 min-w-0" value="${esc(cat.name)}" data-cat-field="name" data-id="${cat.id}" aria-label="Nimi">
+      <input type="color" class="swatch" value="${cat.color}" data-cat-field="color" data-id="${cat.id}" aria-label="Värv">
+      <label class="text-xs flex items-center gap-1"><input type="checkbox" data-cat-field="daily" data-id="${cat.id}" ${cat.daily ? 'checked' : ''}> Päevalimiidis</label>
+      ${cat.id === FALLBACK_CAT ? '<span class="text-xs muted" style="width:4.6rem;text-align:center">varukategooria</span>'
+        : `<button data-action="delCat" data-id="${cat.id}" class="btn btn-ghost btn-sm" style="width:4.6rem">Kustuta</button>`}
+    </div>`).join('');
+
+  const catCard = card('Kategooriad', `
+    <p class="text-sm muted mb-2">„Päevalimiidis“ tähendab, et kulu vähendab päevalimiiti. Ilma linnukeseta kulud (nt üür) arvestatakse püsikulude plaanist.</p>
+    ${cats}
+    <div class="flex flex-wrap items-end gap-2 mt-4">
+      <input id="nc-name" class="input input-sm flex-1 min-w-0" placeholder="Uue kategooria nimi" aria-label="Uue kategooria nimi">
+      <input id="nc-color" type="color" class="swatch" value="${PALETTE[state.categories.length % PALETTE.length]}" aria-label="Uue kategooria värv">
+      <label class="text-xs flex items-center gap-1"><input id="nc-daily" type="checkbox" checked> Päevalimiidis</label>
+      <button data-action="addCat" class="btn btn-dark btn-sm">Lisa kategooria</button>
+    </div>`, 'lg:col-span-2');
+
+  const dataCard = card('Andmed ja privaatsus', `
+    <p class="text-sm">Kõik andmed on ainult selles seadmes. Äpp ei saada midagi välja.</p>
+    <p class="text-sm muted mt-2">Praegune hoidla: <b>${esc(Store.backend)}</b></p>
+    <p class="text-sm muted">Andmeskeemi versioon ${state.schema}, ${state.tx.length} tehingut, ${state.rules.length} reeglit, ${Object.keys(state.history).length} arhiveeritud kuud.</p>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button data-action="exportData" class="btn btn-ghost btn-sm">Laadi varukoopia alla</button>
+      <button data-action="pickFile" data-kind="json" class="btn btn-ghost btn-sm">Taasta varukoopiast</button>
+      <input type="file" accept=".json,application/json" data-file="json" hidden>
+    </div>
+    <button data-action="reset" class="btn btn-ghost btn-sm mt-4" style="color:var(--bad)">Kustuta kõik andmed</button>`);
+
+  return `<div class="grid gap-4 lg:grid-cols-3">${catCard}${dataCard}</div>`;
+}
+
+/* ---------- 8. TEGEVUSED ---------- */
+let toastTimer = null, undoFn = null;
+function toast(msg, opts = {}) {
+  const el = $('#toast');
+  undoFn = opts.undo || null;
+  el.innerHTML = `<span>${esc(msg)}</span>${undoFn ? '<button data-undo>Võta tagasi</button>' : ''}`;
+  el.className = `toast show ${opts.type === 'error' ? 'toast-error' : ''}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), opts.ms || 4500);
+}
+
+function confirmTwice(el, fn, label = 'Kinnita') {
+  if (el.dataset.armed) return fn();
+  const orig = el.textContent;
+  el.dataset.armed = '1';
+  el.textContent = label;
+  el.classList.add('armed');
+  setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.textContent = orig; el.classList.remove('armed'); } }, 3000);
+}
+
+function pressKey(k) {
+  if (k === 'del') kp = kp.slice(0, -1);
+  else if (k === ',') { if (!kp.includes(',')) kp = (kp || '0') + ','; }
+  else {
+    const [whole, dec] = kp.split(',');
+    if (dec !== undefined ? dec.length >= 2 : whole.length >= 6) return;
+    kp = kp === '0' ? k : kp + k;
+  }
+  const d = $('#kp-display');
+  if (d) d.textContent = kp || '0';
+  $$('[data-action="quickAdd"]').forEach(b => b.classList.toggle('dim', !(num(kp) > 0)));
+}
+
+function addQuick(catId) {
+  const amount = round2(num(kp));
+  if (!(amount > 0)) return toast('Sisesta enne summa numbrilaualt.', { type: 'error' });
+  const t = { id: uid(), date: todayISO(), amount, cat: catId, note: '', merchant: '', source: 'manual', reconciled: false };
+  state.tx.push(t);
+  kp = '';
+  commit();
+  const cat = getCat(catId);
+  toast(`Lisatud ${eur(amount)}: ${cat.name}`, { undo: () => { state.tx = state.tx.filter(x => x.id !== t.id); commit(); } });
+}
+
+function deleteTx(id) {
+  const i = state.tx.findIndex(t => t.id === id);
+  if (i < 0) return;
+  const [removed] = state.tx.splice(i, 1);
+  commit();
+  toast('Tehing kustutatud.', { undo: () => { state.tx.splice(i, 0, removed); commit(); } });
+}
+
+function addCategory() {
+  const name = $('#nc-name').value.trim();
+  if (!name) return toast('Sisesta kategooria nimi.', { type: 'error' });
+  if (state.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) return toast('Selle nimega kategooria on juba olemas.', { type: 'error' });
+  state.categories.push({ id: 'c-' + uid(), name, color: $('#nc-color').value, daily: $('#nc-daily').checked });
+  commit();
+  toast(`Kategooria „${name}“ lisatud.`);
+}
+
+// Ohutu kustutamine: tehingud liiguvad varukategooriasse, seotud reeglid eemaldatakse
+function deleteCategory(id) {
+  if (id === FALLBACK_CAT) return;
+  let moved = 0;
+  for (const t of state.tx) if (t.cat === id) { t.cat = FALLBACK_CAT; moved++; }
+  state.rules = state.rules.filter(r => r.cat !== id);
+  state.categories = state.categories.filter(c => c.id !== id);
+  commit();
+  toast(`Kategooria kustutatud. ${nTx(moved)} liikus kategooriasse „${getCat(FALLBACK_CAT).name}“.`);
+}
+
+const csvLine = (arr, sep) => arr.map(v => `"${String(v).replace(/"/g, '""')}"`).join(sep);
+
+function toSwedbank(rows, Y, M) {
+  const acc = 'EE382200221020145685';
+  return [
+    csvLine(['Kliendi konto', 'Reatüüp', 'Kuupäev', 'Saaja/Maksja', 'Selgitus', 'Summa', 'Valuuta', 'Deebet/Kreedit', 'Arhiivi tunnus', 'Tehingu tüüp', 'Viitenumber', 'Dokumendi number'], ';'),
+    csvLine([acc, '10', `01.${M}.${Y}`, '', 'Algsaldo', '1520,00', 'EUR', 'K', '', 'AS', '', ''], ';'),
+    csvLine([acc, '20', `01.${M}.${Y}`, 'TÖÖANDJA OÜ', 'Palk', '1200,00', 'EUR', 'K', `SIM-${Y}${M}-PALK`, 'MK', '', ''], ';'),
+    ...rows.map(r => csvLine([acc, '20', `${r.date.slice(8)}.${M}.${Y}`, r.merchant, 'Kaardimakse', r.amount.toFixed(2).replace('.', ','), 'EUR', 'D', r.ref, 'KAART', '', ''], ';'))
+  ].join('\r\n');
+}
+
+function toLHV(rows, Y, M) {
+  const acc = 'EE717700771001234567';
+  return [
+    csvLine(['Kliendi konto', 'Dokumendi number', 'Kuupäev', 'Saaja/maksja konto', 'Saaja/maksja nimi', 'Saaja panga kood', 'Tühi', 'Deebet/Kreedit (D/C)', 'Summa', 'Viitenumber', 'Arhiveerimistunnus', 'Selgitus', 'Teenustasu', 'Valuuta', 'Isikukood või registrikood'], ','),
+    csvLine([acc, '', `${Y}-${M}-01`, '', 'TÖÖANDJA OÜ', '', '', 'C', '1200.00', '', `SIM-${Y}${M}-PALK`, 'Palk', '0.00', 'EUR', ''], ','),
+    ...rows.map(r => csvLine([acc, '', r.date, '', r.merchant, '', '', 'D', (-r.amount).toFixed(2), '', r.ref, 'Kaardimakse', '0.00', 'EUR', ''], ','))
+  ].join('\r\n');
+}
+
+// Loob päris panga formaadis CSV teksti ja saadab selle läbi sama toru nagu päris fail
+function simulateBank(format = 'swedbank') {
+  const mk = monthKey(), [Y, M] = mk.split('-'), dim = daysInMonth(mk), today = new Date().getDate();
+  const MERCH = { food: 'RIMI KESKLINN', transport: 'BOLT.EU/R/2409', fixed: 'TELIA EESTI AS' };
+  const out = state.tx.filter(t => t.source === 'manual' && !t.reconciled && monthKey(t.date) === mk).slice(0, 3)
+    .map(t => ({ day: Math.min(dim, +t.date.slice(8) + 1), merchant: MERCH[t.cat] || 'KOHVIK RÖST', amount: t.amount }));
+  const demo = [['RIMI HAABERSTI', 23.45], ['BOLT.EU/O/2409', 6.8], ['WOLT OY', 18.9], ['APOLLO KINO SOLARIS', 11.5],
+    ['CIRCLE K TALLINN', 42.1], ['SELVER KRISTIINE', 15.37], ['SPOTIFY P3F9A1', 11.99], ['ELEKTRILEVI OU', 38.2]];
+  demo.forEach(([merchant, amount], i) => out.push({ day: 1 + Math.floor(i * (today - 1) / demo.length), merchant, amount }));
+  const rows = out.map(r => ({ ...r, date: `${Y}-${M}-${pad(r.day)}`, ref: `SIM-${mk}-${pad(r.day)}-${r.merchant.replace(/[^A-Z0-9]/g, '')}-${r.amount}` }));
+  const lhv = format === 'lhv';
+  importCSV(lhv ? toLHV(rows, Y, M) : toSwedbank(rows, Y, M), lhv ? 'Simuleeritud LHV' : 'Simuleeritud Swedbank');
+}
+
+function importCSV(text, label) {
+  try {
+    const rows = normalizeBankRows(parseCSV(text));
+    if (!rows.length) return toast('Failist ei leitud ühtegi väljaminekut.', { type: 'error' });
+    const s = ingestBankRows(rows);
+    if (state.ui.view !== 'strategy') { state.ui.view = 'strategy'; commit(); }
+    toast(`${label}. Liidetud käsitsi kuludega: ${s.matched}. Reegliga kategoriseeritud: ${s.ruled}. Vajab sinu valikut: ${s.unknown}.${s.dup ? ` Korduvad read jäeti vahele: ${s.dup}.` : ''}`, { ms: 7000 });
+  } catch (err) {
+    toast(err.message || 'CSV-faili lugemine ebaõnnestus.', { type: 'error' });
+  }
+}
+
+async function readCSVFile(f) {
+  if (!f) return;
+  if (!/\.(csv|txt)$/i.test(f.name)) return toast('Vali CSV-fail (.csv).', { type: 'error' });
+  const buf = await f.arrayBuffer();
+  let text = new TextDecoder('utf-8').decode(buf);
+  if (text.includes(String.fromCharCode(0xFFFD))) text = new TextDecoder('windows-1257').decode(buf); // vanemad Eesti pangafailid
+  importCSV(text, f.name);
+}
+
+async function importJSON(f) {
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!data || !Array.isArray(data.tx)) throw new Error('vale fail');
+    state = migrate(data);
+    applyThemeMeta();
+    commit();
+    toast('Varukoopia taastatud.');
+  } catch (e) {
+    toast('See fail ei ole Quant Budgeti varukoopia.', { type: 'error' });
+  }
+}
+
+function exportJSON() {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: `quant-budget-varukoopia-${todayISO()}.json` });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Varukoopia allalaadimine alustatud.');
+}
+
+async function resetAll() {
+  await Store.clear();
+  state = defaultState();
+  kp = '';
+  applyThemeMeta();
+  commit();
+  toast('Kõik andmed kustutati. Alustad puhtalt lehelt.');
+}
+
+const ACTIONS = {
+  nav: el => { state.ui.view = el.dataset.view; if (el.dataset.view === 'quick') state.ui.viewMonth = monthKey(); commit(); window.scrollTo(0, 0); },
+  theme: () => { state.ui.theme = state.ui.theme === 'dark' ? 'light' : 'dark'; applyThemeMeta(); commit(); },
+  key: el => pressKey(el.dataset.key),
+  quickAdd: el => addQuick(el.dataset.cat),
+  deleteTx: el => deleteTx(el.dataset.id),
+  transfer: () => {
+    const mk = monthKey();
+    const c = calc(mk);
+    const cur = state.transfers[mk] || { done: false, amount: 0 };
+    const nextDone = !cur.done;
+    state.transfers[mk] = { done: nextDone, amount: nextDone ? c.invest : 0 };
+    commit();
+    if (nextDone) toast('Tubli! Maksid kõigepealt iseendale.');
+  },
+  addAlloc: () => { state.allocations.push({ id: 'a-' + uid(), name: 'Uus eesmärk', pct: 0, invest: false }); commit(); },
+  delAlloc: el => confirmTwice(el, () => { state.allocations = state.allocations.filter(a => a.id !== el.dataset.id); commit(); }),
+  addCat: addCategory,
+  delCat: el => confirmTwice(el, () => deleteCategory(el.dataset.id)),
+  addRule: () => {
+    if (!upsertRule($('#new-rule-pattern').value, $('#new-rule-cat').value)) return toast('Sisesta märksõna.', { type: 'error' });
+    const n = applyRules();
+    commit();
+    toast(`Reegel lisatud.${n ? ` Kategooria sai ${nTx(n)}.` : ''}`);
+  },
+  delRule: el => { state.rules = state.rules.filter(r => r.id !== el.dataset.id); commit(); },
+  filter: el => { state.ui.filter = el.dataset.filter; commit(); },
+  simulate: () => simulateBank(state.ui.simFormat),
+  pickFile: el => $(`input[data-file="${el.dataset.kind}"]`)?.click(),
+  exportData: exportJSON,
+  reset: el => confirmTwice(el, resetAll, 'Kliki uuesti: kustutab kõik')
+};
+
+/* ---------- 9. SÜNDMUSED ---------- */
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (el && ACTIONS[el.dataset.action]) ACTIONS[el.dataset.action](el, e);
+});
+
+app.addEventListener('keydown', e => {
+  const el = e.target.closest('[data-dropzone]');
+  if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ACTIONS.pickFile(el); }
+});
+
+const setModel = el => { state[el.dataset.model] = clamp(num(el.value), 0, num(el.max, Infinity)); };
+
+app.addEventListener('input', e => {
+  const el = e.target, d = el.dataset;
+  if (d.alloc) {
+    const a = state.allocations.find(x => x.id === d.alloc);
+    if (!a) return;
+    const others = state.allocations.reduce((s, x) => s + (x === a ? 0 : x.pct), 0);
+    a.pct = clamp(Math.round(num(el.value)), 0, Math.max(0, 100 - others));
+    if (+el.value !== a.pct) el.value = a.pct;
+  } else if (d.model) setModel(el);
+  else return;
+  Store.save(state);
+  refreshLive();
+});
+
+app.addEventListener('change', e => {
+  const el = e.target, d = el.dataset;
+  if (d.file) { const f = el.files && el.files[0]; el.value = ''; return d.file === 'csv' ? readCSVFile(f) : importJSON(f); }
+  if (d.model) {
+    setModel(el);
+    el.value = state[d.model];
+    if (d.model === 'returnRate') return commit();
+    Store.save(state);
+    return refreshLive();
+  }
+  if (d.alloc) return commit();
+  if (d.ui === 'viewMonth') { state.ui.viewMonth = el.value; return commit(); }
+  if (d.ui) { state.ui[d.ui] = el.value; return Store.save(state); }
+  if (d.uiBool) { state.ui[d.uiBool] = el.checked; return commit(); }
+  if (d.txCat) return setTxCategory(d.txCat, el.value);
+  if (d.ruleCat) {
+    const r = state.rules.find(x => x.id === d.ruleCat);
+    if (r) r.cat = el.value;
+    applyRules();
+    return commit();
+  }
+  if (d.allocField) {
+    const a = state.allocations.find(x => x.id === d.id);
+    if (!a) return;
+    if (d.allocField === 'invest') { a.invest = el.checked; return commit(); }
+    a.name = el.value.trim() || a.name;
+    el.value = a.name;
+    Store.save(state);
+    return refreshLive();
+  }
+  if (d.catField) {
+    const cat = state.categories.find(x => x.id === d.id);
+    if (!cat) return;
+    cat[d.catField] = d.catField === 'daily' ? el.checked : (el.value.trim() || cat[d.catField]);
+    commit();
+  }
+});
+
+['dragenter', 'dragover'].forEach(type => app.addEventListener(type, e => {
+  const z = e.target.closest('[data-dropzone]');
+  if (!z) return;
+  e.preventDefault();
+  z.classList.add('drop-active');
+}));
+app.addEventListener('dragleave', e => {
+  const z = e.target.closest('[data-dropzone]');
+  if (z && !z.contains(e.relatedTarget)) z.classList.remove('drop-active');
+});
+app.addEventListener('drop', e => {
+  const z = e.target.closest('[data-dropzone]');
+  if (!z) return;
+  e.preventDefault();
+  z.classList.remove('drop-active');
+  readCSVFile(e.dataTransfer.files[0]);
+});
+// Väljaspool ala lohistatud fail ei tohi brauseris avaneda
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+document.addEventListener('keydown', e => {
+  if (state.ui.view !== 'quick' || e.target.matches('input, select, textarea')) return;
+  if (/^[0-9]$/.test(e.key)) pressKey(e.key);
+  else if (e.key === ',' || e.key === '.') pressKey(',');
+  else if (e.key === 'Backspace') pressKey('del');
+  else return;
+  e.preventDefault();
+});
+
+$('#toast').addEventListener('click', e => {
+  if (!e.target.closest('[data-undo]') || !undoFn) return;
+  const fn = undoFn;
+  undoFn = null;
+  $('#toast').classList.remove('show');
+  fn();
+});
+
+/* ---------- KÄIVITUS ---------- */
+(async function init() {
+  state = migrate(await Store.load());
+  rolloverIfNeeded();
+  applyThemeMeta();
+  render();
+  Store.save(state);
+})();
+
+</script>
+</body>
+</html>
